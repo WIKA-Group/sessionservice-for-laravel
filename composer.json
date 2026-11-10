@@ -1,0 +1,31 @@
+{
+    "name": "wika-group/sessionservice-for-laravel",
+    "description": "Handles the communication with the session service",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "WIKA Group",
+            "email": "webapps-admin@wika.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.5",
+        "illuminate/support": "^12.0|^13.0",
+        "illuminate/http": "^12.0|^13.0",
+        "spatie/laravel-package-tools": "^1.93"
+    },
+    "autoload": {
+        "psr-4": {
+            "WikaGroup\\SessionService\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "WikaGroup\\SessionService\\SessionServiceProvider"
+            ]
+        }
+    }
+}
