@@ -45,7 +45,7 @@ use WikaGroup\SessionService\SessionService;
     $middleware->web(append: [
         EnsureSessionServiceAuthenticated::class,
     ]);
-    $middleware->redirectGuestsTo(fn () => app(SessionService::class)->getLoginUrl());
+    $middleware->redirectGuestsTo(fn () => resolve(SessionService::class)->getLoginUrl());
 })
 ```
 
@@ -68,6 +68,30 @@ Route::get('/dashboard', Dashboard::class)->middleware(EnsureSessionServiceAuthe
         <button type="submit">Logout</button>
     </form>
 @endauth
+```
+
+### Events
+The package dispatches Laravel events you can listen to (e.g. in `AppServiceProvider::boot()`):
+
+| Event                                          | Properties                                       |
+|------------------------------------------------|--------------------------------------------------|
+| `WikaGroup\SessionService\Events\LoginSucceeded`  | `$user`, `$userData` (result of `exchangeCode`)  |
+| `WikaGroup\SessionService\Events\LoginFailed`     | `$message`, `$exception`                         |
+| `WikaGroup\SessionService\Events\LogoutSucceeded` | `$user`                                          |
+| `WikaGroup\SessionService\Events\LogoutFailed`    | `$message`, `$user`, `$exception`                |
+
+```php
+use Illuminate\Support\Facades\Event;
+use WikaGroup\SessionService\Events\LoginSucceeded;
+
+Event::listen(function (LoginSucceeded $event): void {
+    logger()->info('Login', ['email' => $event->userData['email']]);
+});
+```
+
+After a successful login the user data is also stored in the session:
+```php
+$userData = session('sessionservice-user-data');
 ```
 
 ### Using the service directly
