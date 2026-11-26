@@ -57,8 +57,26 @@ Route::get('/dashboard', Dashboard::class)->middleware(EnsureSessionServiceAuthe
 ### Provided routes
 | Method | Path                       | Name                      | Description                                                                 |
 |--------|----------------------------|---------------------------|-----------------------------------------------------------------------------|
+| GET    | `/sessionservice/login`    | `sessionservice.login`    | Top-level redirect to the Session Service login; `?return=` URL is used after login if its origin is allowed |
 | GET    | `/sessionservice/callback` | `sessionservice.callback` | Exchanges the code, finds/creates the user by OAuth ID or email and logs in |
 | POST   | `/sessionservice/logout`   | `sessionservice.logout`   | Logs out locally and redirects to the Session Service logout                |
+
+### XHR / fetch requests (CORS)
+A redirect to the Session Service can't be followed by XHR/fetch (CORS error). For such requests the middleware therefore does not redirect:
+
+- **Inertia** (`X-Inertia`): `409` with `X-Inertia-Location` → Inertia navigates to the login automatically.
+- **JSON** (`expectsJson()`): `401` with `login_url` (contains `?return=` from the `Referer`).
+
+Handle the `401` in the frontend with a top-level navigation (no user interaction needed):
+```js
+const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'include' });
+if (res.status === 401) {
+    const { login_url } = await res.json();
+    window.top.location.href = login_url;
+}
+```
+
+Allowed `return` origins: `APP_URL` plus `config('cors.allowed_origins')`, or `sessionservice.allowed_return_origins` if set (wildcards like `https://*.wika.com` allowed). Other return URLs are ignored and `home` is used.
 
 ### Logout button
 ```html

@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 use WikaGroup\SessionService\Events\LoginFailed;
@@ -17,6 +18,18 @@ use WikaGroup\SessionService\SessionService;
 class SessionServiceController
 {
     public const string SESSION_USER_DATA_KEY = 'sessionservice-user-data';
+
+    /** Top-level navigation to the Session Service login; returns to the given (allowed) URL afterwards. */
+    public function login(Request $request, SessionService $service): RedirectResponse
+    {
+        $return = (string) $request->query('return', '');
+
+        if ($this->isAllowedReturnUrl($return)) {
+            $request->session()->put('url.intended', $return);
+        }
+
+        return redirect()->away($service->getLoginUrl());
+    }
 
     public function callback(Request $request, SessionService $service): RedirectResponse
     {
@@ -82,5 +95,29 @@ class SessionServiceController
         event(new LogoutSucceeded($user));
 
         return redirect($service->getLogoutUrl());
+    }
+
+    private function isAllowedReturnUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+        if (!isset($parts['scheme'], $parts['host'])) {
+            return false;
+        }
+
+        $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+
+        $allowed = [
+            rtrim((string) config('app.url'), '/'),
+            ...(config('sessionservice.allowed_return_origins') ?? config('cors.allowed_origins', [])),
+        ];
+
+        foreach ($allowed as $pattern) {
+            $pattern = trim((string) $pattern);
+            if ($pattern !== '' && Str::is($pattern, $origin)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

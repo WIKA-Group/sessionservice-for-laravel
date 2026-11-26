@@ -32,9 +32,23 @@ return [
     */
 
     'routes' => [
+        'login' => '/login',
         'callback' => '/callback',
         'logout' => '/logout',
         'home' => '/',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Return Origins
+    |--------------------------------------------------------------------------
+    |
+    | Origins (wildcards allowed, e.g. "https://*.wika.com") the login route
+    | may return to via ?return=. APP_URL is always allowed.
+    | null = use config('cors.allowed_origins').
+    |
+    */
+
+    'allowed_return_origins' => null,
 
 ];
