@@ -78,6 +78,25 @@ if (res.status === 401) {
 
 Allowed `return` origins: `APP_URL` plus `config('cors.allowed_origins')`, or `sessionservice.allowed_return_origins` if set (wildcards like `https://*.wika.com` allowed). Other return URLs are ignored and `home` is used.
 
+### Embedded components (e.g. wire-extender)
+Embedded components are loaded via cross-origin `fetch` and inserted with `innerHTML`, so neither a server redirect nor a plain `<script>` tag works.
+Instead, run the login redirect script in the host page, e.g. from a Livewire component (`$this->js()` is executed after the component is initialized):
+
+```php
+use Illuminate\Support\Facades\Auth;
+use WikaGroup\SessionService\SessionService;
+
+public function mount(SessionService $service): void
+{
+    if (Auth::guest()) {
+        $this->js($service->getLoginRedirectScript());
+    }
+}
+```
+
+The host page navigates to `/sessionservice/login?return={host page URL}` and returns there after login (the host origin must be an allowed return origin, see above).
+If a redirect was already triggered within the last 30 seconds (configurable via parameter), it is skipped to prevent redirect loops, e.g. if the session cookie is not sent with the embed request (`SESSION_SAME_SITE=none`, `SESSION_SECURE_COOKIE=true` and `cors.supports_credentials` are required).
+
 ### Logout button
 ```html
 @auth
@@ -120,6 +139,7 @@ $service = app(SessionService::class);
 
 $service->getLoginUrl();
 $service->getLogoutUrl();
+$service->getLoginRedirectScript(); // JS for embedded components, see above
 $service->exchangeCode($code); // session_token, expires_at, user_id, email, first_name, last_name, display_name
 ```
 

@@ -47,6 +47,26 @@ class SessionService
     }
 
     /**
+     * JS expression for embedded components (e.g. wire-extender): navigates the host page top-level to the
+     * login route and returns to the host page afterwards. Skips the redirect if one was already triggered
+     * within $loopGuardSeconds (e.g. session cookie not sent) to prevent redirect loops.
+     */
+    public function getLoginRedirectScript(int $loopGuardSeconds = 30): string
+    {
+        $loginUrl = json_encode(route('sessionservice.login'), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $guardMs = $loopGuardSeconds * 1000;
+
+        return <<<JS
+            (() => {
+                const key = 'sessionservice-login-redirect';
+                if (Date.now() - Number(sessionStorage.getItem(key) || 0) < {$guardMs}) return;
+                sessionStorage.setItem(key, String(Date.now()));
+                window.location.href = {$loginUrl} + '?return=' + encodeURIComponent(window.location.href);
+            })()
+            JS;
+    }
+
+    /**
      * @return array{session_token: string, expires_at: string, user_id: string, email: string, first_name: string, last_name: string, display_name: string}
      *
      * @throws RequestException
